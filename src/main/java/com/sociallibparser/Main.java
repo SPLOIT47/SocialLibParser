@@ -11,5 +11,6 @@ public class Main {
         //qodana test
         StringBuilder test = new StringBuilder();
         test.append("a" + 1);
+
     }
 }
