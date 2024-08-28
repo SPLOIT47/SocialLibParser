@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.sociallibparser'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://github.com/psiegman/mvn-repo/raw/master/releases'
+    }
+}
+
+dependencies {
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.17.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation'nl.siegmann.epublib:epublib-core:3.1'
+    implementation 'org.jsoup:jsoup:1.15.3'
+    implementation 'org.jdom:jdom2:2.0.6.1'
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+}
+
+application {
+    mainClass = 'com.sociallibparser.Main'
+}
+
+run {
+    standardInput = System.in
+}
