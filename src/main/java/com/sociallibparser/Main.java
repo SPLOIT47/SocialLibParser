@@ -7,7 +7,5 @@ public class Main {
         MetadataParser parser = new MetadataParser();
         parser.parseMetadata();
         parser.parseVolumes();
-
-        //test
     }
 }
