@@ -26,4 +26,3 @@ jobs:
         with:
           name: qodana-report
           path: qodana-report/
-version: 1.0
