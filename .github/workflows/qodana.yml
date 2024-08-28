@@ -1,0 +1,29 @@
+name: Qodana
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  qodana:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Qodana
+        uses: JetBrains/qodana-action@v2023.1.1
+        with:
+          linter: jetbrains/qodana-jvm:latest
+
+      - name: Upload Qodana report
+        uses: actions/upload-artifact@v3
+        with:
+          name: qodana-report
+          path: qodana-report/
+version: 1.0
