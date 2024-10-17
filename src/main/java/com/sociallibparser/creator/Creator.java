@@ -28,7 +28,7 @@ public abstract class Creator {
         client = OkHttpClientSingelton.getInstance().getClient();
         mapper = ObjectMapperSingelton.getInstance().getMapper();
         requestManager = RequestManagerSigelton.getInstance().getRequestManager();
-        RELATIVE_DIR = TITLE_DETAILS.typeOfTitle() + "/" + TITLE_DETAILS.name();
+        RELATIVE_DIR = "Titles/" + TITLE_DETAILS.typeOfTitle() + "/" + TITLE_DETAILS.name();
         TITLE_RELATIVE_PATH = RELATIVE_DIR + "/" + TITLE_DETAILS.name() + "-volume-";
 
         createDirectory();

@@ -1,9 +1,6 @@
-package com.sociallibparser.chapterparser;
+package com.sociallibparser.parser.chapterparser;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -21,15 +18,6 @@ public class RanobeLibParser extends ChapterParser{
         super(titleFullName, branch_id, cover);
         TitleDetails titleDetails = new TitleDetails(TITLE_FULL_NAME, downloadCover(), COVER.get("filename").asText(), TitleType.Ranobe);
         creator = CreatorFactory.getCreator(BookType.EPUB, titleDetails);
-
-        Path path = Paths.get(TitleType.Ranobe.toString());
-        if (!Files.exists(path) && !Files.isDirectory(path)) {
-            try {
-                Files.createDirectory(path);
-            } catch (IOException e) {
-                throw new RuntimeException(e.getMessage());
-            }
-        }
     }
 
     @Override
@@ -40,9 +28,8 @@ public class RanobeLibParser extends ChapterParser{
         Collection<AttachmentDetails> attachments;
         if (chapterData.has("attachments")) { attachments = processAttachments(chapterData.get("attachments")); }
         else { attachments = null; }
-        ChapterDetails details = new ChapterDetails(volume, number, content, id, name, attachments);
 
-        return details;
+        return new ChapterDetails(volume, number, content, id, name, attachments);
     }
 
     private Collection<AttachmentDetails> processAttachments(JsonNode chapterAttachments) {

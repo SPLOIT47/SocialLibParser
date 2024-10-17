@@ -1,4 +1,4 @@
-package com.sociallibparser.chapterparser;
+package com.sociallibparser.parser.chapterparser;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,13 +47,18 @@ public abstract class ChapterParser {
             String url = API_HOST + "/api/manga/" + TITLE_FULL_NAME + "/chapter?" + 
                          "volume=" + volume + "&number=" + number + "&branch_id=" + BRANCH_ID;
             Request request = new Request.Builder().url(url).build();
-            Response response = requestManager.RequestWithRetries(request);
-            if (!response.isSuccessful() || response.body() == null) {
-                continue;
+
+            try(Response response = requestManager.RequestWithRetries(request)) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    continue;
+                }
+
+                JsonNode data = mapper.readTree(response.body().string()).get("data");
+                ChapterDetails details = processData(volume, number, data);
+                volumeDetails.add(details);
+            } catch (RuntimeException e) {
+                throw new RuntimeException(e);
             }
-            JsonNode data = mapper.readTree(response.body().string()).get("data");
-            ChapterDetails details = processData(volume, number, data);
-            volumeDetails.add(details);
         }
 
         creator.uploadVolume(volumeDetails);
@@ -64,8 +69,16 @@ public abstract class ChapterParser {
     @SneakyThrows
     protected byte[] downloadCover() {
         Request request = new Request.Builder().url(COVER.get("default").asText()).build();
-        Response response = requestManager.Request(request);
-        if (response.isSuccessful() && response.body() != null) { return response.body().bytes(); }
-        else { return null; }
+
+        try(Response response = requestManager.RequestWithRetries(request)) {
+            if (response.isSuccessful() && response.body() != null) {
+                return response.body().bytes();
+            }
+            else {
+                return null;
+            }
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

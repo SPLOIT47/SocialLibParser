@@ -17,13 +17,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.sociallibparser.chapterparser.ChapterParser;
-import com.sociallibparser.chapterparser.ChapterParserFactory;
+import com.sociallibparser.parser.chapterparser.ChapterParser;
+import com.sociallibparser.parser.chapterparser.ChapterParserFactory;
 import com.sociallibparser.manager.RequestManager;
 import com.sociallibparser.singelton.ConfigReaderSingelton;
 import com.sociallibparser.singelton.ObjectMapperSingelton;
@@ -42,10 +41,9 @@ public class MetadataParser {
     private final ObjectMapper mapper;
     private final Scanner scanner;
     private final ExecutorService executor;
-    private final ConfigReaderSingelton CONFIG_READER;
     private String branch_id;
-    private Map<String, ArrayList<String>> volumesList;
-    private ArrayList<String> branchIds;
+    private final Map<String, ArrayList<String>> volumesList;
+    private final ArrayList<String> branchIds;
     private JsonNode ranobe_info;
     private JsonNode cover;
     private ChapterParser chapterParser;
@@ -55,13 +53,13 @@ public class MetadataParser {
         requestManager = RequestManagerSigelton.getInstance().getRequestManager();
         mapper = ObjectMapperSingelton.getInstance().getMapper();
         scanner = new Scanner(System.in);
-        CONFIG_READER = ConfigReaderSingelton.getInstance();
+        ConfigReaderSingelton CONFIG_READER = ConfigReaderSingelton.getInstance();
 
         String userDefinedThreadsCount = CONFIG_READER.getProperty("threads");
         int threadsCount = (userDefinedThreadsCount == null ? 1 : Integer.parseInt(userDefinedThreadsCount));
         executor = Executors.newFixedThreadPool(threadsCount);
 
-        volumesList = new ConcurrentHashMap<String, ArrayList<String>>();
+        volumesList = new ConcurrentHashMap<>();
 
         System.out.print("Ranobe url: ");
         TITLE_URL = scanner.nextLine();   
@@ -70,7 +68,7 @@ public class MetadataParser {
         TITLE_ID = extractTitleId(TITLE_FULL_NAME);
 
         branchIds = new ArrayList<>();
-        Path path = Paths.get("ranobe");
+        Path path = Paths.get("Titles");
         if (!Files.exists(path) && !Files.isDirectory(path)) {
             try {
                 Files.createDirectory(path);
@@ -95,18 +93,19 @@ public class MetadataParser {
 
     public void parseVolumes() {
         CompletableFuture<Void> future = parseVolumesAsync();
-        future.thenRun(() -> executor.shutdown());
         try {
             future.get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e.getMessage());
+        } finally {
+            executor.shutdown();
         }
     }
 
     private void parseInfo() {
         String url = API_HOST + "/api/manga/" + TITLE_FULL_NAME;
         Request request = new Request.Builder().url(url).build();
-        try (Response response = requestManager.Request(request);){
+        try (Response response = requestManager.Request(request)){
             if (!response.isSuccessful() || response.body() == null) {
                 throw new RuntimeException(response.message());
             }
@@ -122,9 +121,7 @@ public class MetadataParser {
     private void parseBranchesInfo() {
         String url = API_HOST + "/api/branches/" + TITLE_ID + "?team_defaults=1%";
         Request request = new Request.Builder().url(url).build();
-        try {
-            Response response = requestManager.Request(request);
-
+        try (Response response = requestManager.Request(request)){
             if (!response.isSuccessful() || response.body() == null) {
                 throw new RuntimeException(response.message());
             }
@@ -154,40 +151,38 @@ public class MetadataParser {
     private void parseChaptersInfo() {
         String url = API_HOST + "/api/manga/" + TITLE_FULL_NAME + "/chapters";
         Request request = new Request.Builder().url(url).build();
-        Response response = requestManager.Request(request);
+        try (Response response = requestManager.Request(request)){
+            if (!response.isSuccessful() || response.body() == null) {
+                throw new RuntimeException(response.message());
+            }
 
-        if (!response.isSuccessful() || response.body() == null) {
-            throw new RuntimeException(response.message());
-        }
-
-        String responseBody = response.body().string();
-        JsonNode chaptersDataWithAllBranches = mapper.readTree(responseBody).get("data");
-        ObjectNode chaptersDataCurrentBranch = mapper.createObjectNode();
-        ArrayNode dataArray = mapper.createArrayNode();
-        for (JsonNode ch : chaptersDataWithAllBranches) {
-            for (JsonNode br : ch.get("branches")) {
-                if (br.get("branch_id").toString().equals(branch_id) || currentBranch.equals("1")) {
-                    dataArray.add(ch);
+            String responseBody = response.body().string();
+            JsonNode chaptersDataWithAllBranches = mapper.readTree(responseBody).get("data");
+            ObjectNode chaptersDataCurrentBranch = mapper.createObjectNode();
+            ArrayNode dataArray = mapper.createArrayNode();
+            for (JsonNode ch : chaptersDataWithAllBranches) {
+                for (JsonNode br : ch.get("branches")) {
+                    if (br.get("branch_id").toString().equals(branch_id) || currentBranch.equals("1")) {
+                        dataArray.add(ch);
+                    }
                 }
             }
-        }
 
-        chaptersDataCurrentBranch.set("data", dataArray);
-        ((ObjectNode) ranobe_info).put("chapters", chaptersDataCurrentBranch.get("data").toString());
+            chaptersDataCurrentBranch.set("data", dataArray);
+            ((ObjectNode) ranobe_info).put("chapters", chaptersDataCurrentBranch.get("data").toString());
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private void parseVolumesInfo() throws JsonMappingException, JsonProcessingException {
+    private void parseVolumesInfo() throws JsonProcessingException {
         String chaptersStringData = ranobe_info.get("chapters").asText();
         JsonNode chaptersData = mapper.readTree(chaptersStringData);
         for (JsonNode chapter : chaptersData) {
-            String volume = chapter.get("volume").asText().toString();
-            String number = chapter.get("number").asText().toString();
-            ArrayList<String> set = volumesList.get(volume);
-            if (set == null) {
-                set = new ArrayList<>();
-                volumesList.put(volume, set);
-            }
-            set.add(number);
+            String volume = chapter.get("volume").asText();
+            String number = chapter.get("number").asText();
+            ArrayList<String> chapters = volumesList.computeIfAbsent(volume, k -> new ArrayList<>());
+            chapters.add(number);
         }
     }
 
@@ -196,9 +191,7 @@ public class MetadataParser {
         for (Map.Entry<String, ArrayList<String>> entry : volumesList.entrySet()) {
             String volume = entry.getKey();
             Collection<String> chapters = entry.getValue();
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                chapterParser.parseVolume(volume, chapters);
-            }, executor);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> chapterParser.parseVolume(volume, chapters), executor);
             futures.add(future);
         }
 
@@ -206,7 +199,7 @@ public class MetadataParser {
     }
 
     private String extractTitleName(String url) {
-        String pattern = ".*/(\\d+--[^/\\?]+)";
+        String pattern = ".*/(\\d+--[^/?]+)";
         Pattern r = Pattern.compile(pattern);
         Matcher m = r.matcher(url);
         if (m.find()) {

@@ -1,4 +1,4 @@
-package com.sociallibparser.chapterparser;
+package com.sociallibparser.parser.chapterparser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
