@@ -1,15 +1,16 @@
 package com.sociallibparser.creator;
 
 import com.sociallibparser.details.TitleDetails;
+import com.sociallibparser.enums.BookType;
 
 public class CreatorFactory {
-    public Creator getCreator(String type, TitleDetails details) {
+    public static Creator getCreator(BookType type, TitleDetails details) {
         switch (type) {
-            case "epub":
+            case EPUB:
                 return  new EpubCreator(details);
-            case "fb2":
+            case FB2:
                 return null;
-            case "pdf":
+            case PDF:
                 return null;
             default:
                 return null;

@@ -6,10 +6,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,7 +61,7 @@ public class MetadataParser {
         int threadsCount = (userDefinedThreadsCount == null ? 1 : Integer.parseInt(userDefinedThreadsCount));
         executor = Executors.newFixedThreadPool(threadsCount);
 
-        volumesList = new HashMap<String, ArrayList<String>>(); 
+        volumesList = new ConcurrentHashMap<String, ArrayList<String>>();
 
         System.out.print("Ranobe url: ");
         TITLE_URL = scanner.nextLine();   
@@ -106,9 +106,7 @@ public class MetadataParser {
     private void parseInfo() {
         String url = API_HOST + "/api/manga/" + TITLE_FULL_NAME;
         Request request = new Request.Builder().url(url).build();
-        try {
-            Response response = requestManager.Request(request);
-
+        try (Response response = requestManager.Request(request);){
             if (!response.isSuccessful() || response.body() == null) {
                 throw new RuntimeException(response.message());
             }
@@ -134,9 +132,10 @@ public class MetadataParser {
             String responseBody = response.body().string();
             JsonNode dataJson = mapper.readTree(responseBody).get("data");
             ((ObjectNode) ranobe_info).put("teams", dataJson.toString());
-            
-
-            if (ranobe_info.get("teams").isEmpty()) {
+            System.out.println(ranobe_info.get("teams"));
+            Object teams = ranobe_info.get("teams");
+            if (teams instanceof Collection && ((Collection<?>) teams).isEmpty()) {
+                System.out.println("boba");
                 currentBranch = "1";
             } else {
                 System.out.println("Availible translations: ");

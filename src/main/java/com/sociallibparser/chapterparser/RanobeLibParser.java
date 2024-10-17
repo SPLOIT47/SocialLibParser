@@ -1,17 +1,35 @@
 package com.sociallibparser.chapterparser;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sociallibparser.creator.CreatorFactory;
 import com.sociallibparser.details.AttachmentDetails;
 import com.sociallibparser.details.ChapterDetails;
+import com.sociallibparser.details.TitleDetails;
+import com.sociallibparser.enums.BookType;
+import com.sociallibparser.enums.TitleType;
 
 public class RanobeLibParser extends ChapterParser{
 
     public RanobeLibParser(String titleFullName, String branch_id, JsonNode cover) {
         super(titleFullName, branch_id, cover);
+        TitleDetails titleDetails = new TitleDetails(TITLE_FULL_NAME, downloadCover(), COVER.get("filename").asText(), TitleType.Ranobe);
+        creator = CreatorFactory.getCreator(BookType.EPUB, titleDetails);
+
+        Path path = Paths.get(TitleType.Ranobe.toString());
+        if (!Files.exists(path) && !Files.isDirectory(path)) {
+            try {
+                Files.createDirectory(path);
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage());
+            }
+        }
     }
 
     @Override

@@ -7,10 +7,5 @@ public class Main {
         MetadataParser parser = new MetadataParser();
         parser.parseMetadata();
         parser.parseVolumes();
-
-        //qodana test
-        StringBuilder test = new StringBuilder();
-        test.append("a" + 1);
-
     }
 }

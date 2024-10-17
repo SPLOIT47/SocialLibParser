@@ -1,9 +1,5 @@
 package com.sociallibparser.creator;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sociallibparser.details.ChapterDetails;
 import com.sociallibparser.details.TitleDetails;
@@ -11,8 +7,12 @@ import com.sociallibparser.manager.RequestManager;
 import com.sociallibparser.singelton.ObjectMapperSingelton;
 import com.sociallibparser.singelton.OkHttpClientSingelton;
 import com.sociallibparser.singelton.RequestManagerSigelton;
-
 import okhttp3.OkHttpClient;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
 
 public abstract class Creator {
     protected final String RELATIVE_DIR;
@@ -34,7 +34,7 @@ public abstract class Creator {
         createDirectory();
     }
 
-    public abstract void uploadVolume(ChapterDetails details);
+    public abstract void uploadVolume(Collection<ChapterDetails> volume);
 
     protected void createDirectory() {
         Path path = Paths.get(RELATIVE_DIR);
